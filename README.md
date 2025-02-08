@@ -25,7 +25,7 @@ This is an HR Management Application built with Node.js, Express.js, and Postgre
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/hr-management.git
+    git clone https://github.com/DinoFazlic/HR-Management.git
     cd hr-management
     ```
 
