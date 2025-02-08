@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-header {
+            font-size: 1.75rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .dashboard-section {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .dashboard-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            max-width: 400px;
+            width: 100%;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        .dashboard-card .card-body {
+            padding: 20px;
+        }
+        .list-group-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Logout Button -->
+    <a href="/auth/logout" class="btn btn-danger btn-sm logout-btn">Logout</a>
+
+    <div class="container mt-5">
+        <!-- Header -->
+        <h1 class="dashboard-header text-center">HR Manager Dashboard</h1>
+
+        <div class="container d-flex justify-content-center">
+            <div class="row justify-content-center text-center">
+                <!-- Manage Job Postings -->
+                <div class="col-lg-5 col-md-6 col-sm-10 mb-4">
+                    <div class="card dashboard-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Manage Job Postings</h5>
+                            <p class="card-text">Create, update, and archive job postings with ease.</p>
+                            <a href="/job-postings/manage" class="btn btn-primary w-100">Go to Job Postings</a>
+                        </div>
+                    </div>
+                </div>
+        
+                <!-- Statistics Dashboard -->
+                <div class="col-lg-5 col-md-6 col-sm-10 mb-4">
+                    <div class="card dashboard-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Statistics Dashboard</h5>
+                            <p class="card-text">View real-time data and metrics about job postings and candidates.</p>
+                            <a href="/statistics/statDashboard" class="btn btn-success w-100">Go to Statistics</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+
+        <!-- Active Job Postings Section -->
+        <div class="dashboard-section mt-5" id="job-postings-section">
+            <h2 class="mb-4">Active Job Postings</h2>
+            <ul id="job-postings-list" class="list-group shadow-sm rounded" style="max-width: 800px; width: 100%;">
+                <!-- Active job postings will be dynamically loaded here -->
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Fetch Active Job Postings
+        fetch('/job-postings/active')
+            .then(response => response.json())
+            .then(data => {
+                const jobPostingsList = document.getElementById('job-postings-list');
+
+                // Clear any existing content
+                jobPostingsList.innerHTML = '';
+
+                if (data.length === 0) {
+                    jobPostingsList.innerHTML = '<li class="list-group-item text-center">No active job postings available.</li>';
+                    return;
+                }
+
+                data.forEach(job => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('list-group-item');
+                    listItem.innerHTML = `
+                        <span>${job.title}</span>
+                        <button class="btn btn-primary btn-sm" onclick="window.location.href='/candidates/by-job/${job.id}'">View Candidates</button>`;
+                    jobPostingsList.appendChild(listItem);
+                });
+            })
+            .catch(err => console.error('Error fetching active job postings:', err));
+    </script>
+</body>
+</html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            position: relative;
+        }
+        .welcome {
+            background-color: #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .card h5 {
+            font-size: 1.2rem;
+        }
+        .table-responsive {
+            margin-top: 20px;
+        }
+        .btn-edit {
+            margin-top: 10px;
+        }
+        .logout-btn {
+            margin-top: 30px;
+            position: absolute; 
+            top: 20px;    
+            right: 30px; 
+        }
+        .gap-3 {
+            gap: 15px; /* Razmak između dugmadi */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <!-- Welcome Section -->
+        <div class="welcome">
+            <h1>Welcome, <%= user.first_name || 'User' %>!</h1>
+            <div class="mt-3 d-flex justify-content-center gap-3">
+                <a href="/profile/edit" class="btn btn-outline-primary">Edit Info</a>
+                <a href="/auth/logout" class="btn btn-danger">Logout</a>
+            </div>
+            
+        </div>
+
+        <div class="section-title">Filter Job Postings</div>
+        <form action="/users/userDashboard" method="GET" class="mb-4">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" name="company" class="form-control" placeholder="Filter by Company">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="position" class="form-control" placeholder="Filter by Position">
+                </div>
+                <div class="col-md-4">
+                    <input type="date" name="deadline" class="form-control">
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="/users/userDashboard" class="btn btn-secondary">Reset</a>
+            </div>
+        </form>
+        
+
+
+        <!-- Section: Active Jobs -->
+        <div class="section-title">Active Job Postings</div>
+        <div class="row">
+            <% if (activeJobs && activeJobs.length > 0) { %>
+                <% activeJobs.forEach(job => { %>
+                    <div class="col-md-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title"><%= job.title %></h5>
+                                <p class="card-text">Company: <%= job.company_name %></p>
+                                <p class="card-text">Deadline: <%= new Date(job.deadline).toLocaleDateString() %></p>
+                                <button 
+                                    class="btn btn-primary w-100"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#jobModal"
+                                    data-title="<%= job.title %>"
+                                    data-company="<%= job.company_name %>"
+                                    data-deadline="<%= new Date(job.deadline).toLocaleDateString() %>"
+                                    data-description="<%= job.description %>"
+                                    data-job-id="<%= job.id %>">
+                                    View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p class="text-muted">No active job postings available at the moment.</p>
+            <% } %>
+        </div>
+
+        <!-- Section: Your Applications -->
+        <div class="section-title">Your Applications</div>
+        <% if (appliedJobs && appliedJobs.length > 0) { %>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Job Title</th>
+                            <th>Company</th>
+                            <th>Status</th>
+                            <th>Applied On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% appliedJobs.forEach(job => { %>
+                            <tr>
+                                <td><%= job.title %></td>
+                                <td><%= job.company_name %></td>
+                                <td><span class="badge bg-info text-dark"><%= job.status %></span></td>
+                                <td><%= new Date(job.applied_at).toLocaleDateString() %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <p class="text-muted">You have not applied to any jobs yet.</p>
+        <% } %>
+
+        <!-- Logout Button
+            <div class="text-center logout-btn">
+                <a href="/auth/logout" class="btn btn-danger">Logout</a>
+            </div>
+        -->
+        
+    </div>
+
+    <!-- Job Details Modal -->
+    <div class="modal fade" id="jobModal" tabindex="-1" aria-labelledby="jobModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="jobModalLabel">Job Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h4 id="modalJobTitle"></h4>
+                    <p><strong>Company:</strong> <span id="modalCompanyName"></span></p>
+                    <p><strong>Deadline:</strong> <span id="modalDeadline"></span></p>
+                    <p id="modalDescription"></p>
+
+                    <!-- Application Form -->
+                    <form id="jobApplicationForm" action="" method="POST" enctype="multipart/form-data">
+                        <div id="dynamicFields"></div> <!-- Placeholder for dynamic fields -->
+                        <button type="submit" class="btn btn-primary">Apply</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const jobModal = document.getElementById('jobModal');
+    
+        jobModal.addEventListener('show.bs.modal', async function (event) {
+            const button = event.relatedTarget;
+            const jobId = button.getAttribute('data-job-id');
+    
+            try {
+                const [jobResponse, profileResponse] = await Promise.all([
+                    fetch(`/job-postings/jobs/${jobId}`),
+                    fetch('/profile/get')
+                ]);
+    
+                const job = await jobResponse.json();
+                const profile = await profileResponse.json();
+    
+                document.getElementById('modalJobTitle').textContent = job.title;
+                document.getElementById('modalCompanyName').textContent = job.company_name;
+                document.getElementById('modalDeadline').textContent = new Date(job.deadline).toLocaleDateString();
+                document.getElementById('modalDescription').textContent = job.description;
+    
+                const dynamicFields = document.getElementById('dynamicFields');
+                dynamicFields.innerHTML = '';
+    
+                const fieldMappings = {
+                    'Full Name': 'name',
+                    'Email': 'email',
+                    'Phone': 'phone',
+                    'Education Level': 'education_level',
+                };
+
+                
+                // Populate dynamic fields
+                job.form_fields.forEach(field => {
+                    const fieldName = fieldMappings[field] || field.toLowerCase().replace(/\s+/g, '_');
+                    const prefillValue = profile[fieldName] || '';
+                    const inputFieldName = fieldName;
+                    const email = <%- JSON.stringify(userEmail)%>;
+    
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'mb-3';
+                    fieldDiv.innerHTML = `
+                        <label class="form-label">${field}</label>
+                        <input type="text" name="${inputFieldName}" class="form-control" value="${field === 'Email' ? email : prefillValue}" ${field === 'Email' && prefillValue ? 'readonly' : ''} required>
+                    `;
+                    dynamicFields.appendChild(fieldDiv);
+                });
+    
+                // Handle required documents
+                if (job.required_documents && job.required_documents.length > 0) {
+                    const docsDiv = document.createElement('div');
+                    docsDiv.className = 'mb-3';
+                    docsDiv.innerHTML = '<label class="form-label">Upload Required Documents</label>';
+    
+                    job.required_documents.forEach(doc => {
+                        const inputGroup = document.createElement('div');
+                        inputGroup.className = 'input-group mb-2';
+    
+                        if (doc === 'CV' && profile.cv   && typeof profile.cv === 'string' && profile.cv.trim() !== '') {
+                            console.log('Preloading CV for current user:', profile.cv);
+                            inputGroup.innerHTML = `
+                                <span class="input-group-text">
+                                    Preloaded ${doc}: <a href="/uploads/${profile.cv}" target="_blank">View</a>
+                                    <button type="button" class="btn btn-danger btn-sm ms-2" id="remove${doc}Btn">X</button>
+                                </span>
+                                <input type="hidden" name="uploaded_files" value="${profile.cv}" id="preloaded-${doc}">
+                            `;
+    
+                            inputGroup.querySelector(`#remove${doc}Btn`).addEventListener('click', () => {
+                                inputGroup.innerHTML = `
+                                    <label class="input-group-text">${doc}</label>
+                                    <input type="file" name="documents" class="form-control" required onchange="uploadFile(this, '${doc}')">
+                                    <input type="hidden" name="uploaded_files" id="uploaded-${doc}" value="">
+                                `;
+                            });
+                        } else {
+                            inputGroup.innerHTML = `
+                                <label class="input-group-text">${doc}</label>
+                                <input type="file" name="documents" class="form-control" required onchange="uploadFile(this, '${doc}')">
+                                <input type="hidden" name="uploaded_files" id="uploaded-${doc}" value="">
+                            `;
+                        }
+    
+                        docsDiv.appendChild(inputGroup);
+                    });
+    
+                    dynamicFields.appendChild(docsDiv);
+                }
+    
+                const form = document.getElementById('jobApplicationForm');
+                form.action = `/job-postings/jobs/${jobId}/apply`;
+    
+            } catch (err) {
+                console.error('Error fetching job or profile data:', err);
+            }
+        });
+
+        async function uploadFile(input, docType) {
+            const file = input.files[0];
+            if (!file) return;
+    
+            const formData = new FormData();
+            formData.append('file', file);
+    
+            try {
+                const response = await fetch('/upload-files', {
+                    method: 'POST',
+                    body: formData
+                });
+    
+                if (response.ok) {
+                    const data = await response.json();
+                    //alert(`File uploaded successfully: ${data.files[0]}`);
+                    const uploadedFilePath = `public/uploads/${data.files[0]}`; 
+                    document.getElementById(`uploaded-${docType}`).value = uploadedFilePath;
+                } else {
+                    const errorData = await response.json();
+                    console.error('Upload failed:', errorText);
+                    alert('Error uploading file: ' + errorData.error);
+                }
+            } catch (err) {
+                console.error('Error uploading file:', err);
+                alert('An unexpected error occurred during file upload.');
+            }
+        }
+    
+        // Handle form submission
+        const jobApplicationForm = document.getElementById('jobApplicationForm');
+    
+        jobApplicationForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+    
+            const formData = new FormData();
+    
+            // Add all dynamic inputs
+            const dynamicInputs = jobApplicationForm.querySelectorAll('input[name]:not([type="file"])');
+            dynamicInputs.forEach(input => {
+                formData.append(input.name, input.value);
+            });
+    
+            // Add all uploaded files under 'documents' key
+            const uploadedFiles = jobApplicationForm.querySelectorAll('input[name="uploaded_files"]');
+            uploadedFiles.forEach(input => {
+                if (input.value) {
+                    formData.append('documents', input.value);
+                }
+            });
+    
+            // Log all form data for debugging
+            console.log('Form Data Submitted:');
+            for (const [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+    
+            try {
+                const response = await fetch(jobApplicationForm.action, {
+                    method: 'POST',
+                    body: formData,
+                });
+    
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(data.message);
+                    window.location.href = '/users/userDashboard';
+                } else {
+                    const errorData = await response.json();
+                    alert('Error submitting application: ' + errorData.error);
+                }
+            } catch (err) {
+                console.error('Error submitting application:', err);
+                alert('An unexpected error occurred.');
+            }
+        });
+    </script>
+    
+
+</body>
+</html>

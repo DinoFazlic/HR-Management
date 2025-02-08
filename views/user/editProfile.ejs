@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Edit Profile</h1>
+
+        <!-- Profile Form -->
+        <form action="/profile" method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="name" class="form-label">Full Name</label>
+                <input type="text" id="name" name="name" class="form-control" value="<%= profile?.name || '' %>" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" id="email" name="email" class="form-control" value="<%= profile?.email || '' %>">
+            </div>
+
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone</label>
+                <input type="text" id="phone" name="phone" class="form-control" value="<%= profile?.phone || '' %>" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="experience" class="form-label">Work Experience</label>
+                <textarea id="experience" name="experience" class="form-control" rows="4"><%= profile?.experience || '' %></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="education" class="form-label">Education Level</label>
+                <select id="education" name="education" class="form-select" required>
+                    <option value="Bachelor" <%= profile.education === 'Bachelor' ? 'selected' : '' %>>Bachelor</option>
+                    <option value="Master" <%= profile.education === 'Master' ? 'selected' : '' %>>Master</option>
+                    <option value="PhD" <%= profile.education === 'PhD' ? 'selected' : '' %>>PhD</option>
+                    <option value="Other" <%= profile.education === 'Other' ? 'selected' : '' %>>Other</option>
+                </select>
+            </div>
+            
+
+            <div class="mb-3">
+                <label for="skills" class="form-label">Skills</label>
+                <textarea id="skills" name="skills" class="form-control" rows="3" required><%= profile?.skills || '' %></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="cv" class="form-label">Upload CV</label>
+                <input type="file" id="cv" name="cv" class="form-control">
+                <% if (profile?.cv) { %>
+                    <p class="mt-2">Current CV: <a href="/uploads/cv/<%= profile.cv %>" target="_blank"><%= profile.cv %></a></p>
+                <% } %>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Profile</button>
+        </form>
+    </div>
+</body>
+</html>

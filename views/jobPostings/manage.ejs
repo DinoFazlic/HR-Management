@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Job Postings</title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .job-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .job-card-header {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        .job-card-body {
+            padding: 20px;
+        }
+        .toggle-form-btn {
+            font-size: 1.1rem;
+            padding: 10px 20px;
+        }
+
+        .accordion-button {
+        font-size: 1.2rem;
+        font-weight: bold;
+        }
+        .accordion-body {
+            font-size: 1rem;
+            line-height: 1.5;
+
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        button.btn {
+        min-height: 50px; 
+        font-size: 1rem; 
+        
+        }
+
+        .accordion-item {
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .accordion-header {
+            background-color: #f8f9fa;
+        }
+
+
+        form .form-control,
+        form .form-select,
+        form .btn {
+            height: 45px; 
+            box-sizing: border-box;
+            margin: 0;
+        }
+
+
+        form .form-label {
+            margin-bottom: 5px; 
+            display: block; 
+        }
+
+
+        form.d-flex {
+            gap: 20px;
+        }
+
+
+        @media (max-width: 768px) {
+            form.d-flex {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+
+<div class="container my-5">
+   <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-center">Manage Job Postings</h1>
+        <a href="/admin/adminDashboard" class="btn btn-outline-primary btn-lg">Back to Dashboard</a>
+    </div>
+
+    <!-- Toggle Add Job Form -->
+    <div class="text-center mb-4">
+        <button id="toggleFormButton" class="btn btn-success toggle-form-btn">Add Job Posting</button>
+    </div>
+
+    <!-- Add Job Posting Form -->
+    <div id="addJobForm" class="card shadow-sm p-4 mb-5" style="display: none;">
+        <h2 class="mb-3">Add New Job Posting</h2>
+        <form action="/job-postings" method="POST">
+            <div class="mb-3">
+                <label for="title" class="form-label">Job Title</label>
+                <input type="text" id="title" name="title" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="company_name" class="form-label">Company Name</label>
+                <input type="text" id="company_name" name="company_name" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="deadline" class="form-label">Application Deadline</label>
+                <input type="date" id="deadline" name="deadline" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Job Description</label>
+                <textarea id="description" name="description" class="form-control" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Required Documents</label>
+                <div class="form-check">
+                    <input type="checkbox" name="required_documents[]" value="CV" id="cv" class="form-check-input">
+                    <label for="cv" class="form-check-label">CV</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" name="required_documents[]" value="Cover Letter" id="cover_letter" class="form-check-input">
+                    <label for="cover_letter" class="form-check-label">Cover Letter</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" name="required_documents[]" value="Certificates" id="certificates" class="form-check-input">
+                    <label for="certificates" class="form-check-label">Certificates</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Form Fields</label>
+                <div class="form-check">
+                    <input type="checkbox" name="form_fields[]" value="Full Name" id="full_name" class="form-check-input">
+                    <label for="full_name" class="form-check-label">Full Name</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" name="form_fields[]" value="Email" id="email" class="form-check-input">
+                    <label for="email" class="form-check-label">Email</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" name="form_fields[]" value="Phone" id="phone" class="form-check-input">
+                    <label for="phone" class="form-check-label">Phone</label>
+                </div>
+                
+            </div>
+            <button type="submit" class="btn btn-primary">Add Job</button>
+        </form>
+        
+    </div>
+
+    <!-- Search and Filter -->
+    <h2 class="section-title">Search and Filter</h2>
+    <form action="/job-postings/manage" method="GET" class="d-flex align-items-center gap-3 mb-4 p-3 rounded shadow-sm" style="background-color: #ffffff; max-width: 900px; margin: auto;">
+        <!-- Search Bar -->
+        <div class="flex-grow-1">
+            <label for="search" class="form-label fw-bold mb-1">Search by Title</label>
+            <input 
+                type="text" 
+                id="search" 
+                name="search" 
+                class="form-control" 
+                placeholder="Search jobs by title..." 
+                value="<%= search || '' %>"
+            >
+        </div>
+    
+        <!-- Filter Dropdown -->
+        <div>
+            <label for="status" class="form-label fw-bold mb-1">Filter by Status</label>
+            <select id="status" name="status" class="form-select" style="height: 45px;">
+                <option value="" <%= status === '' ? 'selected' : '' %>>All</option>
+                <option value="active" <%= status === 'active' ? 'selected' : '' %>>Active</option>
+                <option value="archived" <%= status === 'archived' ? 'selected' : '' %>>Archived</option>
+            </select>
+        </div>
+    
+        <!-- Submit Button -->
+        <div>
+            <label class="form-label fw-bold mb-1 d-block">&nbsp;</label>
+            <button type="submit" class="btn btn-primary w-100" style="height: 45px;">Apply</button>
+        </div>
+    </form>
+    
+    
+    
+
+    <!-- Job Postings List -->
+    <h2 class="section-title">Job Postings</h2>
+    <% if (jobPostings.length > 0) { %>
+        <div class="accordion" id="jobPostingsAccordion">
+            <% jobPostings.forEach((posting, index) => { %>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-<%= index %>">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<%= index %>" aria-expanded="false" aria-controls="collapse-<%= index %>">
+                            <%= posting.title %>
+                        </button>
+                    </h2>
+                    <div id="collapse-<%= index %>" class="accordion-collapse collapse" aria-labelledby="heading-<%= index %>" data-bs-parent="#jobPostingsAccordion">
+                        <div class="accordion-body">
+                            <p><strong>Company:</strong> <%= posting.company_name %></p>
+                            <p><strong>Deadline:</strong> <%= posting.deadline.toISOString().slice(0, 10) %></p>
+                            <p><strong>Description:</strong> <%= posting.description %></p>
+                            <p><strong>Status:</strong> 
+                                <span class="badge bg-<%= posting.status === 'active' ? 'success' : 'secondary' %>">
+                                    <%= posting.status %>
+                                </span>
+                            </p>
+                            
+                            <div class="d-flex flex-column align-items-center gap-3 mt-3" style="max-width: 300px; margin: auto;">
+                                <% if (posting.status === 'active') { %>
+                                    <form action="/job-postings/<%= posting.id %>/archive" method="POST" class="w-100">
+                                        <button type="submit" class="btn btn-warning w-100">Archive</button>
+                                    </form>
+                                <% } else { %>
+                                    <span class="text-muted w-100 text-center">Archived</span>
+                                <% } %>
+                            
+                                <button 
+                                    class="btn btn-primary w-100" 
+                                    onclick="window.location.href='/candidates/by-job/<%= posting.id %>'">
+                                    View Candidates
+                                </button>
+                            </div>
+                            
+                            
+                            
+                            
+                            
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+    <% } else { %>
+        <p class="text-muted">No job postings found. Try adjusting your filters or add a new posting.</p>
+    <% } %>
+    
+</div>
+
+<script>
+    document.getElementById('toggleFormButton').addEventListener('click', function () {
+        const form = document.getElementById('addJobForm');
+        if (form.style.display === 'none' || form.style.display === '') {
+            form.style.display = 'block';
+            this.textContent = 'Cancel';
+            this.className = 'btn btn-danger toggle-form-btn';
+        } else {
+            form.style.display = 'none';
+            this.textContent = 'Add Job Posting';
+            this.className = 'btn btn-success toggle-form-btn';
+        }
+    });
+</script>
+
+</body>
+</html>

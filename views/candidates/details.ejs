@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidates for <%= jobTitle %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" defer></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .candidate-card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #fff;
+        }
+        .nav-tabs .nav-link {
+            border-radius: 0;
+        }
+        .badge {
+            font-size: 0.9em;
+        }
+        .notes-section {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Candidates for <%= jobTitle %></h1>
+        <a href="/admin/adminDashboard" class="btn btn-secondary mb-4">Back to Dashboard</a>
+
+        <!-- Filter -->
+        <div class="d-flex justify-content-end align-items-center mt-3">
+            <label for="educationFilter" class="form-label me-2">Filter by Education:</label>
+            <select id="educationFilter" class="form-select w-auto" onchange="applyFilter(this.value)">
+                <option value="All">All Education Levels</option>
+                <option value="Bachelor">Bachelor</option>
+                <option value="Master">Master</option>
+                <option value="PhD">PhD</option>
+            </select>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="candidateTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" id="applied-tab" data-bs-toggle="tab" data-bs-target="#applied" type="button" role="tab">Applied</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="interview-tab" data-bs-toggle="tab" data-bs-target="#interview" type="button" role="tab">Interview Scheduled</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="hired-tab" data-bs-toggle="tab" data-bs-target="#hired" type="button" role="tab">Hired</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" id="rejected-tab" data-bs-toggle="tab" data-bs-target="#rejected" type="button" role="tab">Rejected</button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content mt-4">
+            <% ['applied', 'interview', 'hired', 'rejected'].forEach(status => { %>
+                <div class="tab-pane fade <%= status === 'applied' ? 'show active' : '' %>" id="<%= status %>" role="tabpanel">
+                    <% candidates.filter(c => c.status === status).forEach(candidate => { %>
+                        <div class="candidate-card" id="candidate-<%= candidate.id %>" data-status="<%= candidate.status %>">
+                            <h4><%= candidate.name %></h4>
+                            <p><strong>Email:</strong> <%= candidate.email %></p>
+                            <p><strong>Phone:</strong> <%= candidate.phone || 'N/A' %></p>
+                            <p><strong>Education Level:</strong> <%= candidate.education_level %></p>
+                            <p><strong>Documents:</strong></p>
+                            <ul>
+                                <% if (candidate.documents && candidate.documents.length > 0) { %>
+                                    <% candidate.documents.forEach((doc, index) => { %>
+                                        <li>
+                                            <a href="<%= doc.startsWith('public/') ? doc.replace('public/', '/') : '/uploads/' + doc %>" target="_blank">
+                                                <% if (doc.toLowerCase().includes('resume')) { %>
+                                                    CV
+                                                <% } else if (doc.toLowerCase().includes('cover')) { %>
+                                                    Cover Letter
+                                                <% } else if (doc.toLowerCase().includes('certificate')) { %>
+                                                    Certificate
+                                                <% } else { %>
+                                                    Document <%= index + 1 %>
+                                                <% } %>
+                                            </a>
+                                        </li>
+                                    <% }) %>
+                                <% } else { %>
+                                    <li>No documents uploaded.</li>
+                                <% } %>
+                            </ul>
+                            <div>
+                                <label for="status-<%= candidate.id %>">Change Status:</label>
+                                <select id="status-<%= candidate.id %>" class="form-select w-auto" onchange="updateCandidateStatus('<%= candidate.id %>')">
+                                    <option value="applied" <%= candidate.status === 'applied' ? 'selected' : '' %>>Applied</option>
+                                    <option value="interview" <%= candidate.status === 'interview' ? 'selected' : '' %>>Interview Scheduled</option>
+                                    <option value="hired" <%= candidate.status === 'hired' ? 'selected' : '' %>>Hired</option>
+                                    <option value="rejected" <%= candidate.status === 'rejected' ? 'selected' : '' %>>Rejected</option>
+                                </select>
+                            </div>
+
+                            <% if (status === 'interview') { %>
+                                <div class="mb-3">
+                                    <label for="rating-input-<%= candidate.id %>" class="form-label">Candidate Rating</label>
+                                    <input 
+                                        type="number" 
+                                        id="rating-input-<%= candidate.id %>"
+                                        name="rating" 
+                                        class="form-control" 
+                                        min="1" 
+                                        max="10" 
+                                        value="<%= candidate.rating || '' %>" 
+                                        required
+                                    >
+                                </div>
+                                <button 
+                                    class="btn btn-primary" 
+                                    onclick="updateRating(event, '<%= candidate.id %>', '<%= jobId %>')"
+                                >
+                                    Save Rating
+                                </button>
+                            <% } %>
+                            
+                            
+
+                            <!-- Notes Section -->
+                            <div class="notes-section">
+                            <h5>Notes</h5>
+                            <ul id="notes-list-<%= candidate.id %>" class="list-group mb-3">
+                                <% candidate.notes.forEach(note => { %>
+                                    <li class="list-group-item"><%= note.note %></li>
+                                <% }) %>
+                            </ul>
+                            <% if (status === 'applied') { %>
+                                <form onsubmit="addNote(event, '<%= candidate.id %>')">
+                                    <div class="input-group">
+                                        <input type="text" id="note-input-<%= candidate.id %>" class="form-control" placeholder="Add a note" required>
+                                        <button type="submit" class="btn btn-primary">Add Note</button>
+                                    </div>
+                                </form>
+                            <% } %>
+                        </div>
+
+                            <% if (status === 'interview') { %>
+                                <div class="reviews-section mt-4">
+                                    <h5>Reviews</h5>
+                                    <ul id="reviews-list-<%= candidate.id %>" class="list-group mb-3">
+                                        <% candidate.reviews.forEach(review => { %>
+                                            <li class="list-group-item">
+                                                <strong><%= review.reviewer_name %>:</strong> <%= review.review %>
+                                            </li>
+                                        <% }) %>
+                                    </ul>
+                                    
+                                    <form onsubmit="addReview(event, '<%= candidate.id %>')">
+                                        <div class="input-group">
+                                            <input type="text" id="reviewer-name-<%= candidate.id %>" class="form-control" placeholder="Reviewer Name" required>
+                                            <input type="text" id="review-input-<%= candidate.id %>" class="form-control" placeholder="Write a review" required>
+                                            <button type="submit" class="btn btn-primary">Add Review</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                
+
+                                <div class="schedule-section mt-4">
+                                    <h5>Schedule Interview</h5>
+                                    <form onsubmit="scheduleInterview(event, '<%= candidate.id %>')">
+                                        <div class="mb-3">
+                                            <label for="scheduled-at-<%= candidate.id %>" class="form-label">Scheduled At</label>
+                                            <input type="datetime-local" id="scheduled-at-<%= candidate.id %>" class="form-control" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Schedule</button>
+                                    </form>
+                                </div>
+                            <% } else if (status === 'hired' || status === 'rejected') { %>
+                                <div class="reviews-section mt-4">
+                                    <h5>Reviews</h5>
+                                    <ul id="reviews-list-<%= candidate.id %>" class="list-group mb-3">
+                                        <% candidate.reviews.forEach(review => { %>
+                                            <li class="list-group-item">
+                                                <strong><%= review.reviewer_name %>:</strong> <%= review.review %>
+                                            </li>
+                                        <% }) %>
+                                    </ul>
+                                </div>
+                            <% } %>
+                        </div>
+                    <% }) %>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const status = urlParams.get('status') || 'applied';
+
+            const activeTab = document.querySelector(`.nav-link[data-bs-target="#${status}"]`);
+            if (activeTab) {
+                const tabInstance = new bootstrap.Tab(activeTab);
+                tabInstance.show();
+            }
+
+            const education = urlParams.get('education') || 'All';
+            const educationFilter = document.getElementById('educationFilter');
+            if (educationFilter) {
+                educationFilter.value = education;
+            }
+        });
+
+        function updateCandidateStatus(candidateId) {
+            const statusSelect = document.getElementById(`status-${candidateId}`);
+            const newStatus = statusSelect.value;
+
+            fetch(`/candidates/${candidateId}/update-status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus }),
+            })
+                .then(response => {
+                    console.log('Response received:', response);
+
+                    if (!response.ok) {
+                        // Log detailed error for non-OK HTTP statuses
+                        throw new Error(`HTTP error! Status: ${response.status}, StatusText: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Backend response data:', data);
+
+                    if (data.message === 'Status updated successfully') {
+                        location.reload(); // Reloads the page to reflect changes
+                    } else {
+                        console.error('Unexpected backend message:', data.message);
+                        alert('Failed to update status.');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error during status update:', err);
+                    alert('Failed to update status due to an unexpected error. Check logs for details.');
+                });
+        }
+
+
+        function addNote(event, candidateId) {
+            event.preventDefault();
+            const noteInput = document.getElementById(`note-input-${candidateId}`);
+            const noteText = noteInput.value.trim();
+
+            if (!noteText) {
+                alert('Please enter a note.');
+                return;
+            }
+
+            fetch(`/candidates/${candidateId}/add-note`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: noteText }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === 'Note added successfully!') {
+                        const notesList = document.getElementById(`notes-list-${candidateId}`);
+                        const newNote = document.createElement('li');
+                        newNote.className = 'list-group-item';
+                        newNote.textContent = noteText;
+                        notesList.appendChild(newNote);
+                        noteInput.value = '';
+                    } else {
+                        alert('Failed to add note.');
+                    }
+                })
+                .catch(err => console.error('Error adding note:', err));
+        }
+
+        function applyFilter(education) {
+    const activeTab = document.querySelector('.nav-link.active').getAttribute('data-bs-target').substring(1); // Get current tab (status)
+    const queryParams = new URLSearchParams(window.location.search); // Extract query parameters
+    queryParams.set('education', education); // Set selected education filter
+    queryParams.set('status', activeTab); // Retain the current active status/tab
+    const newUrl = `/candidates/by-job/<%= jobId %>?${queryParams.toString()}`; // Build the new URL
+    window.location.href = newUrl; // Navigate to the updated URL
+}
+
+// Ensure tab navigation retains filters
+document.querySelectorAll('.nav-link').forEach(tab => {
+    tab.addEventListener('click', event => {
+        const status = event.target.getAttribute('data-bs-target').substring(1); // Get status from clicked tab
+        const queryParams = new URLSearchParams(window.location.search); // Extract query parameters
+        queryParams.set('status', status); // Set the active status
+        const education = document.getElementById('educationFilter').value; // Get current education filter
+        queryParams.set('education', education); // Retain the current education filter
+        const newUrl = `/candidates/by-job/<%= jobId %>?${queryParams.toString()}`; // Build the new URL
+        window.location.href = newUrl; // Navigate to the updated URL
+    });
+});
+
+
+        document.getElementById('educationFilter').addEventListener('change', (event) => {
+            applyFilter(event.target.value);
+        });
+
+        function addReview(event, candidateId) {
+                event.preventDefault();
+                const reviewerName = document.getElementById(`reviewer-name-${candidateId}`).value.trim();
+                const reviewText = document.getElementById(`review-input-${candidateId}`).value.trim();
+
+                if (!reviewerName || !reviewText) {
+                    alert('Both reviewer name and review are required.');
+                    return;
+                }
+
+                fetch(`/candidates/${candidateId}/add-review`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reviewer_name: reviewerName, review: reviewText }),
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.message === 'Review added successfully!') {
+                            const reviewsList = document.getElementById(`reviews-list-${candidateId}`);
+                            const newReview = document.createElement('li');
+                            newReview.className = 'list-group-item';
+                            newReview.innerHTML = `<strong>${reviewerName}:</strong> ${reviewText}`;
+                            reviewsList.appendChild(newReview);
+
+                            // Clear input fields
+                            document.getElementById(`reviewer-name-${candidateId}`).value = '';
+                            document.getElementById(`review-input-${candidateId}`).value = '';
+                        } else {
+                            alert('Failed to add review.');
+                        }
+                    })
+                    .catch(err => console.error('Error adding review:', err));
+            }
+
+
+            function scheduleInterview(event, candidateId) {
+    event.preventDefault();
+
+    const scheduledAt = document.getElementById(`scheduled-at-${candidateId}`).value.trim();
+
+    if (!scheduledAt) {
+        alert('Please select a date and time.');
+        return;
+    }
+
+    fetch(`/candidates/${candidateId}/schedule-interview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scheduled_at: scheduledAt }), // Correctly pass the scheduled date
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message === 'Interview scheduled successfully!') {
+                alert('Interview scheduled successfully!');
+                location.reload();
+            } else {
+                alert('Failed to schedule interview.');
+            }
+        })
+        .catch(err => console.error('Error scheduling interview:', err));
+}
+
+function updateRating(event, candidateId, jobPostingId) {
+    event.preventDefault();
+    
+    const ratingInput = document.getElementById(`rating-input-${candidateId}`).value;
+
+    if (!ratingInput) {
+        alert('Rating input not found for this candidate.');
+        return;
+    }
+
+    const ratingValue = ratingInput.value;
+    const rating = ratingInput;
+
+    if (!rating || rating < 1 || rating > 10) {
+            alert('Please enter a valid rating between 1 and 10.');
+            return;
+        }
+
+    console.log('Candidate ID:', candidateId);
+    console.log('Job Posting ID:', jobPostingId);
+    console.log('Rating Value:', ratingInput);
+
+    // Nastavi sa slanjem zahteva
+    fetch(`/candidates/${candidateId}/update-rating`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating, job_posting_id: jobPostingId }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        location.reload();
+    })
+    .catch(err => console.error('Error updating rating:', err));
+}
+
+
+
+
+
+
+        
+    </script>
+</body>
+</html>

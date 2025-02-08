@@ -1,0 +1,11 @@
+# Ignorisanje foldera
+node_modules/
+config/
+bin/
+.idea/
+public/
+
+# Ignorisanje specifičnih fajlova
+.env
+testEmail.js
+testHashing.js
